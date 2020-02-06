@@ -1,8 +1,9 @@
-﻿$container = "sql2019rc2";
-$port = 1435
+﻿$container = "sql2017";
+$port = '1435:1433'
 $instance = "localhost,1433";
-$database = "WideWorldImporters";
+$database = "WWI";
 $dockerlogin = "dockerlogin";
+$backupfile = "WWI2016_FULL_20190829_1636.bak";
 
 $containerexists = docker ps -f "name=$container" --format "{{.Names}}";
 
@@ -12,7 +13,7 @@ if($container -ne $containerexists)
 {
     Write-Host "$container does not exist" -ForegroundColor Cyan;
 
-    docker run -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=P@ssw0rd1" -p $port`:1433 --name $container -d mcr.microsoft.com/mssql/server:2019-latest;
+    docker run -v d:/backup:/backup -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=P@ssw0rd1" -p $port --name $container -d mcr.microsoft.com/mssql/server:2017-latest;
 
     $cred = Get-Credential;
 
@@ -38,9 +39,9 @@ RECONFIGURE;
     }
 }
 
-docker exec -it sql2019rc mkdir -p /var/opt/mssql/backup
+#docker exec -it sql2019rc mkdir -p /var/opt/mssql/backup
  
-docker cp "C:\backup\WideWorldImporters\WideWorldImporters-Full.bak" sql2019rc:/var/opt/mssql/backup
+#docker cp "C:\backup\WideWorldImporters\WideWorldImporters-Full.bak" sql2019rc:/var/opt/mssql/backup
 
 $dockercred = Get-Credential;
 
@@ -53,5 +54,5 @@ $filestructure = @{
 #/var/opt/mssql/data/WWI.ldf
 #/var/opt/mssql/data/WWI.ndf
 
-Restore-DbaDatabase -SqlInstance $instance -DatabaseName $database -SqlCredential $dockercred -Path "/var/opt/mssql/backup/WideWorldImporters-Full.bak" -FileMapping $filestructure -WithReplace;
+Restore-DbaDatabase -SqlInstance $instance -DatabaseName $database -SqlCredential $dockercred -Path "/backup/$backupfile" -FileMapping $filestructure -WithReplace;
 
